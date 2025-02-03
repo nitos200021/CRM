@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Список заявок{% endblock %}
+{% block content %}
+<h2>Список заявок</h2>
+<form method="get" class="row g-3 mb-4">
+  <div class="col-md-2">
+    <label for="date" class="form-label">Дата и время</label>
+    <input type="datetime-local" name="date" id="date" class="form-control">
+  </div>
+  <div class="col-md-2">
+    <label for="work" class="form-label">Тип работ</label>
+    <select name="work" id="work" class="form-select">
+      <option value="">Все</option>
+      {% for work in work_types %}
+        <option value="{{ work.id }}">{{ work.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label for="address" class="form-label">Адрес</label>
+    <select name="address" id="address" class="form-select">
+      <option value="">Все</option>
+      {% for house in houses %}
+        <option value="{{ house.id }}">{{ house.address }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label for="criticality" class="form-label">Критичность</label>
+    <select name="criticality" id="criticality" class="form-select">
+      <option value="">Все</option>
+      <option value="Низкая">Низкая</option>
+      <option value="Средняя">Средняя</option>
+      <option value="Высокая">Высокая</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label for="status" class="form-label">Статус</label>
+    <select name="status" id="status" class="form-select">
+      <option value="">Все</option>
+      <option value="Новая">Новая</option>
+      <option value="В работе">В работе</option>
+      <option value="Выполнена">Выполнена</option>
+      <option value="Отменена">Отменена</option>
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label for="employee" class="form-label">Исполнитель</label>
+    <select name="employee" id="employee" class="form-select">
+      <option value="">Все</option>
+      {% for emp in employees %}
+        <option value="{{ emp.id }}">{{ emp.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label for="responsible" class="form-label">Ответственный</label>
+    <input type="text" name="responsible" id="responsible" class="form-control" placeholder="ФИО">
+  </div>
+  <div class="col-md-2 align-self-end">
+    <button type="submit" class="btn btn-primary">Применить фильтры</button>
+  </div>
+</form>
+<table class="table table-bordered">
+  <thead>
+    <tr>
+      <!-- Убрали "Номер заявки" -->
+      <th>Дата создания</th>
+      <th>Описание</th>
+      <th>Адрес</th>
+      <th>Критичность</th>
+      <th>Контакт</th>
+      <th>Тип работ</th>
+      <th>Статус</th>
+      <th>Ответственный</th>
+      <th>Действия</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for ticket in tickets %}
+    <tr>
+      <td>{{ ticket.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+      <td>{{ ticket.description }}</td>
+      <td>{{ ticket.address }}</td>
+      <td>{{ ticket.criticality }}</td>
+      <td>{{ ticket.contact_name }}<br>{{ ticket.contact_phone }}</td>
+      <td>{{ ticket.work_type.name if ticket.work_type else '' }}</td>
+      <td>{{ ticket.status }}</td>
+      <td>{{ ticket.responsible_person if ticket.responsible_person else 'Не указано' }}</td>
+      <td>
+        <a href="{{ url_for('edit_ticket', ticket_id=ticket.id) }}" class="btn btn-sm btn-primary">Редактировать</a>
+        <a href="{{ url_for('act', ticket_id=ticket.id) }}" class="btn btn-sm btn-secondary" target="_blank">Акт</a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

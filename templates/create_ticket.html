@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Новая заявка{% endblock %}
+{% block content %}
+<h2>Создание новой заявки</h2>
+<form method="post">
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.ticket_number.label(class="form-label") }}
+    {{ form.ticket_number(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows=4) }}
+  </div>
+  <div class="mb-3">
+    {{ form.address.label(class="form-label") }}
+    {{ form.address(class="form-select") }}
+  </div>
+  <div class="mb-3">
+    {{ form.criticality.label(class="form-label") }}
+    {{ form.criticality(class="form-select") }}
+  </div>
+  <div class="mb-3">
+    {{ form.contact_name.label(class="form-label") }}
+    {{ form.contact_name(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.contact_phone.label(class="form-label") }}
+    {{ form.contact_phone(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.work_type.label(class="form-label") }}
+    {{ form.work_type(class="form-select") }}
+  </div>
+  <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+</form>
+{% endblock %}

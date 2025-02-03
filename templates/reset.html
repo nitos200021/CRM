@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block title %}Обнуление данных{% endblock %}
+{% block content %}
+<h2>Обнуление данных</h2>
+<p class="text-danger">ВНИМАНИЕ: Это действие удалит ВСЕ данные из базы (заявки, сотрудники, дома и типовые работы).</p>
+<form method="post">
+  <button type="submit" class="btn btn-danger">Подтвердить обнуление</button>
+  <a href="{{ url_for('index') }}" class="btn btn-secondary">Отмена</a>
+</form>
+{% endblock %}

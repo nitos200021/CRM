@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Добавление исполнителя{% endblock %}
+{% block content %}
+<h2>Добавление нового исполнителя</h2>
+<form method="post">
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.name.label(class="form-label") }}
+    {{ form.name(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.position.label(class="form-label") }}
+    {{ form.position(class="form-control") }}
+  </div>
+  <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+</form>
+{% endblock %}

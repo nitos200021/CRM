@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Добавление адреса{% endblock %}
+{% block content %}
+<h2>Добавление нового адреса</h2>
+<form method="post">
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.address.label(class="form-label") }}
+    {{ form.address(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.floors.label(class="form-label") }}
+    {{ form.floors(class="form-control") }}
+  </div>
+  <button type="submit" class="btn btn-success">{{ form.submit.label.text }}</button>
+</form>
+{% endblock %}
