@@ -40,5 +40,6 @@ class Ticket(db.Model):
     end_time = db.Column(db.DateTime, nullable=True)
     assigned_employee_id = db.Column(db.Integer, db.ForeignKey('employee.id'), nullable=True)
     responsible_person = db.Column(db.String(100), nullable=True)
+    note = db.Column(db.Text, nullable=True)
     work_type = db.relationship('WorkType', backref=db.backref('tickets', lazy=True))
     assigned_employee = db.relationship('Employee', backref=db.backref('tickets', lazy=True))

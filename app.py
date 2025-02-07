@@ -1,5 +1,5 @@
-from flask import Flask, render_template, flash, redirect, url_for, make_response, request
-from flask_login import LoginManager, login_required, current_user
+from flask import Flask, render_template, flash, redirect, url_for, make_response, request, send_file
+from flask_login import LoginManager, login_required, current_user, login_user
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, TextAreaField, SelectField, SubmitField, DateTimeField
 from wtforms.validators import DataRequired
@@ -7,6 +7,8 @@ from datetime import datetime
 from config import Config
 from models import db, User, Employee, Ticket, House, WorkType
 from forms import HouseForm, WorkTypeForm, EmployeeForm
+from docx import Document
+from io import BytesIO
 
 app = Flask(__name__)
 app.config.from_object(Config)
@@ -80,11 +82,13 @@ class TicketForm(FlaskForm):
     submit = SubmitField('Создать заявку')
 
 class EditTicketForm(FlaskForm):
+    description = TextAreaField('Описание проблемы', validators=[DataRequired()])
     status = SelectField('Статус заявки', choices=[('Новая','Новая'),('В работе','В работе'),('Выполнена','Выполнена'),('Отменена','Отменена')], validators=[DataRequired()])
     start_time = DateTimeField('Время начала работы', format='%Y-%m-%dT%H:%M', default=datetime.utcnow)
     end_time = DateTimeField('Время окончания работы', format='%Y-%m-%dT%H:%M')
     assigned_employee = SelectField('Исполнитель', coerce=int, validators=[DataRequired()])
     responsible_person = StringField('Ответственный (мастер смены)', validators=[DataRequired()])
+    note = TextAreaField('Примечание')
     submit = SubmitField('Сохранить изменения')
 
 @login_manager.user_loader
@@ -127,6 +131,7 @@ def logout():
 @login_required
 def index():
     ticket_query = Ticket.query
+
     date_filter = request.args.get('date')
     work_filter = request.args.get('work')
     address_filter = request.args.get('address')
@@ -134,31 +139,51 @@ def index():
     employee_filter = request.args.get('employee')
     responsible_filter = request.args.get('responsible')
     status_filter = request.args.get('status')
+    phone_filter = request.args.get('phone') 
+
     if date_filter:
         try:
             date_obj = datetime.strptime(date_filter, '%Y-%m-%dT%H:%M')
-            ticket_query = ticket_query.filter(db.func.date(Ticket.created_at)==date_obj.date())
+            ticket_query = ticket_query.filter(db.func.date(Ticket.created_at) == date_obj.date())
         except Exception:
-            flash('Неверный формат даты.','danger')
+            flash('Неверный формат даты.', 'danger')
+
     if work_filter:
-        ticket_query = ticket_query.join(WorkType).filter(WorkType.id==int(work_filter))
+        ticket_query = ticket_query.join(WorkType).filter(WorkType.id == int(work_filter))
+
     if address_filter:
         house = House.query.get(int(address_filter))
         if house:
-            ticket_query = ticket_query.filter(Ticket.address==house.address)
+            ticket_query = ticket_query.filter(Ticket.address == house.address)
+
     if criticality_filter:
-        ticket_query = ticket_query.filter(Ticket.criticality==criticality_filter)
+        ticket_query = ticket_query.filter(Ticket.criticality == criticality_filter)
+
     if employee_filter:
-        ticket_query = ticket_query.filter(Ticket.assigned_employee_id==int(employee_filter))
+        ticket_query = ticket_query.filter(Ticket.assigned_employee_id == int(employee_filter))
+
     if responsible_filter:
-        ticket_query = ticket_query.filter(Ticket.responsible_person==responsible_filter)
+        ticket_query = ticket_query.filter(Ticket.responsible_person == responsible_filter)
+
     if status_filter:
-        ticket_query = ticket_query.filter(Ticket.status==status_filter)
-    tickets = ticket_query.order_by(Ticket.created_at.desc()).all()
+        ticket_query = ticket_query.filter(Ticket.status == status_filter)
+
+    if phone_filter:
+        ticket_query = ticket_query.filter(Ticket.contact_phone.like(f'%{phone_filter}%'))
+
+    tickets = ticket_query.order_by(Ticket.criticality.desc(), Ticket.created_at.desc()).all()
+
     houses = House.query.all()
     work_types = WorkType.query.all()
     employees = Employee.query.all()
-    return render_template('index.html', tickets=tickets, houses=houses, work_types=work_types, employees=employees)
+
+    return render_template(
+        'index.html',
+        tickets=tickets,
+        houses=houses,
+        work_types=work_types,
+        employees=employees
+    )
 
 @app.route('/ticket/new', methods=['GET','POST'])
 @login_required
@@ -178,24 +203,34 @@ def create_ticket():
         return redirect(url_for('index'))
     return render_template('create_ticket.html', form=form)
 
-@app.route('/ticket/<int:ticket_id>/edit', methods=['GET','POST'])
+@app.route('/ticket/<int:ticket_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     employees = Employee.query.all()
     form = EditTicketForm(obj=ticket)
     form.assigned_employee.choices = [(emp.id, f'{emp.name} - {emp.position}') for emp in employees]
-    if ticket.assigned_employee_id:
-        form.assigned_employee.data = ticket.assigned_employee_id
+    
     if form.validate_on_submit():
+        ticket.description = form.description.data
         ticket.status = form.status.data
         ticket.start_time = form.start_time.data
         ticket.end_time = form.end_time.data
         ticket.assigned_employee_id = form.assigned_employee.data
         ticket.responsible_person = form.responsible_person.data
+        ticket.note = form.note.data
         db.session.commit()
-        flash('Заявка успешно обновлена.','success')
+        flash('Заявка успешно обновлена.', 'success')
         return redirect(url_for('index'))
+    
+    form.description.data = ticket.description
+    form.status.data = ticket.status
+    form.start_time.data = ticket.start_time
+    form.end_time.data = ticket.end_time
+    form.assigned_employee.data = ticket.assigned_employee_id
+    form.responsible_person.data = ticket.responsible_person
+    form.note.data = ticket.note
+    
     return render_template('edit_ticket.html', form=form, ticket=ticket)
 
 @app.route('/act/<int:ticket_id>')
@@ -210,11 +245,28 @@ def act(ticket_id):
 def act_download(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     house = House.query.filter_by(address=ticket.address).first()
-    rendered = render_template('act.html', ticket=ticket, house=house)
-    response = make_response(rendered)
-    response.headers["Content-Disposition"] = f"attachment; filename=act_{ticket.ticket_number}.html"
-    response.headers["Content-Type"] = "text/html; charset=utf-8"
-    return response
+    
+    document = Document()
+    document.add_heading(f'Акт выполненных работ № {ticket.ticket_number}', 0)
+    document.add_paragraph(f'Дата: {ticket.start_time.strftime("%d.%m.%Y") if ticket.start_time else "__.__.____"}г.')
+    document.add_paragraph(f'Адрес: ул. {ticket.address} {"эт. " + house.floors if house and house.floors else ""}')
+    document.add_paragraph(f'Контактное лицо: {ticket.contact_name}')
+    document.add_paragraph(f'Контактный тел.: {ticket.contact_phone}')
+    document.add_paragraph(f'Характер заявки: {ticket.description}')
+    document.add_paragraph(f'Выполненные работы: {ticket.work_type.name if ticket.work_type else ""}')
+    document.add_paragraph('___________________________________________________')
+    document.add_paragraph('___________________________________________________')
+    document.add_paragraph('___________________________________________________')
+    document.add_paragraph('Материал __________________________________________')
+    document.add_paragraph('___________________________________________________')
+    document.add_paragraph('___________________________________________________')
+    document.add_paragraph(f'Руководитель ___________/_____________/         Исполнитель: {ticket.assigned_employee.name if ticket.assigned_employee else ""}/____________/')
+    document.add_paragraph(f'Претензий и замечаний по выполненным работам не имею ____________/____________/')
+
+    f = BytesIO()
+    document.save(f)
+    f.seek(0)
+    return send_file(f, as_attachment=True, attachment_filename=f'act_{ticket.ticket_number}.docx', mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document')
 
 @app.route('/kanban')
 @login_required

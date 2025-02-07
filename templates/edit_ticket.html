@@ -3,27 +3,35 @@
 {% block content %}
 <h2>Редактирование заявки № {{ ticket.ticket_number }}</h2>
 <form method="post">
-{{ form.hidden_tag() }}
-<div class="mb-3">
-{{ form.status.label(class="form-label") }}
-{{ form.status(class="form-select") }}
-</div>
-<div class="mb-3">
-{{ form.start_time.label(class="form-label") }}
-<input type="datetime-local" name="{{ form.start_time.name }}" class="form-control" value="{{ form.start_time.data.strftime('%Y-%m-%dT%H:%M') if form.start_time.data else '' }}">
-</div>
-<div class="mb-3">
-{{ form.end_time.label(class="form-label") }}
-<input type="datetime-local" name="{{ form.end_time.name }}" class="form-control" value="{{ form.end_time.data.strftime('%Y-%m-%dT%H:%M') if form.end_time.data else '' }}">
-</div>
-<div class="mb-3">
-{{ form.assigned_employee.label(class="form-label") }}
-{{ form.assigned_employee(class="form-select") }}
-</div>
-<div class="mb-3">
-{{ form.responsible_person.label(class="form-label") }}
-{{ form.responsible_person(class="form-control") }}
-</div>
-<button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
+  {{ form.hidden_tag() }}
+  <div class="mb-3">
+    {{ form.description.label(class="form-label") }}
+    {{ form.description(class="form-control", rows="4") }}
+  </div>
+  <div class="mb-3">
+    {{ form.status.label(class="form-label") }}
+    {{ form.status(class="form-select") }}
+  </div>
+  <div class="mb-3">
+    {{ form.start_time.label(class="form-label") }}
+    <input type="datetime-local" name="{{ form.start_time.name }}" class="form-control" value="{{ form.start_time.data.strftime('%Y-%m-%dT%H:%M') if form.start_time.data else '' }}">
+  </div>
+  <div class="mb-3">
+    {{ form.end_time.label(class="form-label") }}
+    <input type="datetime-local" name="{{ form.end_time.name }}" class="form-control" value="{{ form.end_time.data.strftime('%Y-%m-%dT%H:%M') if form.end_time.data else '' }}">
+  </div>
+  <div class="mb-3">
+    {{ form.assigned_employee.label(class="form-label") }}
+    {{ form.assigned_employee(class="form-select") }}
+  </div>
+  <div class="mb-3">
+    {{ form.responsible_person.label(class="form-label") }}
+    {{ form.responsible_person(class="form-control") }}
+  </div>
+  <div class="mb-3">
+    {{ form.note.label(class="form-label") }}
+    {{ form.note(class="form-control", rows="2") }}
+  </div>
+  <button type="submit" class="btn btn-primary">{{ form.submit.label.text }}</button>
 </form>
 {% endblock %}
